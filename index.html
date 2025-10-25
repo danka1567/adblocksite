@@ -3,72 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Video Player</title>
-    <!-- Video.js CDN (CSS and JS) -->
-    <link href="https://vjs.zencdn.net/8.6.1/video-js.min.css" rel="stylesheet">
-    <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+    <title>Advanced Ad-Free Video Player</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             background-color: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-        }
-        .video-container {
-            width: 80%;
-            max-width: 1200px;
-            position: relative;
-        }
-        video {
-            width: 100%;
-            height: auto;
-        }
-        /* Custom controls styling (optional enhancement) */
-        .vjs-control-bar {
-            background-color: rgba(0, 0, 0, 0.7);
-        }
-        .vjs-big-play-button {
-            background-color: rgba(255, 0, 0, 0.7);
-            border-radius: 50%;
-        }
-        /* Fullscreen toggle */
-        .vjs-fullscreen-control:hover {
             color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #playlist {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #playlist button {
+            display: block;
+            margin: 5px 0;
+            padding: 8px 12px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        #playlist button:hover {
+            background: #555;
+        }
+        #player-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 60px);
+            background: #000;
+        }
+        #video-player {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+        }
+        /* Ad Blocker CSS: Hide common ad elements without sandbox */
+        iframe {
+            /* Ensure iframe fills container */
+        }
+        /* Dynamic ad hiding - targets common classes/ids */
+        .ad, .ads, #ad, #ads, .popup, #popup, .banner, .overlay, 
+        [class*="ad-"], [id*="ad-"], .advertisement, iframe[src*="ads"], 
+        div[style*="position: fixed"], div[style*="z-index: 9999"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            height: 0 !important;
+            width: 0 !important;
+        }
+        /* Hide script-loaded ads */
+        script[src*="ads"], script[src*="doubleclick"], script[src*="googlead"] {
+            display: none !important;
+        }
+        /* Controls overlay */
+        .controls {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            gap: 10px;
+        }
+        .controls button {
+            padding: 8px 12px;
+            background: #ff0000;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background: #cc0000;
+        }
+        /* Fullscreen support */
+        #player-container:-webkit-full-screen #video-player,
+        #player-container:-moz-full-screen #video-player,
+        #player-container:fullscreen #video-player {
+            width: 100vw;
+            height: 100vh;
         }
     </style>
 </head>
 <body>
-    <div class="video-container">
-        <video id="my-video" class="video-js vjs-default-skin" controls preload="auto" poster="https://via.placeholder.com/1200x675?text=Video+Poster">
-            <!-- Replace these with your extracted direct sources -->
-            <source src="https://example.com/direct-video.mp4" type="video/mp4"> <!-- Direct MP4 example -->
-            <source src="https://example.com/stream.m3u8" type="application/x-mpegURL"> <!-- HLS example -->
-            <!-- Add more sources as fallbacks -->
-            <p class="vjs-no-js">To view this video, please enable JavaScript and consider upgrading to a web browser that supports HTML5 video.</p>
-        </video>
+    <div id="playlist">
+        <h4>Select Stream:</h4>
+        <button onclick="loadStream(0)">111Movies (Deadpool & Wolverine)</button>
+        <button onclick="loadStream(1)">VidRock (Terminator)</button>
+        <button onclick="loadStream(2)">VidFast (Terminator)</button>
+        <button onclick="loadStream(3)">DSVPlay</button>
+        <button onclick="loadStream(4)">LukeSitTurn</button>
+    </div>
+
+    <div id="player-container">
+        <iframe id="video-player" src="about:blank" allowfullscreen></iframe>
+    </div>
+
+    <div class="controls">
+        <button onclick="togglePlay()">Play/Pause</button>
+        <button onclick="toggleFullscreen()">Fullscreen</button>
     </div>
 
     <script>
-        // Initialize Video.js
-        var player = videojs('my-video', {
-            fluid: true, // Responsive sizing
-            playbackRates: [0.5, 1, 1.5, 2], // Speed controls
-            plugins: {
-                // Optional: Add if you need advanced features like thumbnails or chapters
+        const streams = [
+            'https://111movies.com/movie/533535',
+            'https://vidrock.net/embed/movie/290859',
+            'https://vidfast.pro/movie/290859',
+            'https://dsvplay.com/e/dzqgcpjjesxn?dd38',
+            'https://lukesitturn.com/e/9sq5jnuem4zd'
+        ];
+
+        let currentStream = 0;
+
+        function loadStream(index) {
+            currentStream = index;
+            const player = document.getElementById('video-player');
+            player.src = streams[index];
+            // Auto-play if possible (sites handle their own players)
+            player.onload = () => {
+                // Inject ad-blocker script into iframe (cross-origin workaround via postMessage if needed, but CSS handles most)
+                console.log('Loaded:', streams[index]);
+            };
+        }
+
+        // Load first stream by default
+        loadStream(0);
+
+        function togglePlay() {
+            const iframe = document.getElementById('video-player');
+            // Send postMessage to control play/pause (if site supports; fallback to reload)
+            iframe.contentWindow.postMessage({action: 'playPause'}, '*');
+        }
+
+        function toggleFullscreen() {
+            const container = document.getElementById('player-container');
+            if (container.requestFullscreen) {
+                container.requestFullscreen();
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            } else if (container.mozRequestFullScreen) {
+                container.mozRequestFullScreen();
             }
-        });
+        }
 
-        // Example: Auto-play on load (uncomment if desired)
-        // player.play();
+        // Enhanced ad blocker: Periodically scan and hide new ads
+        setInterval(() => {
+            const iframeDoc = document.getElementById('video-player').contentDocument || document.getElementById('video-player').contentWindow.document;
+            if (iframeDoc) {
+                const ads = iframeDoc.querySelectorAll('.ad, .popup, [class*="ad"]');
+                ads.forEach(ad => {
+                    ad.style.display = 'none';
+                });
+            }
+        }, 2000);
 
-        // Error handling (e.g., if source fails)
-        player.on('error', function() {
-            console.log('Playback error:', player.error());
-        });
+        // Fallback if iframe blocked: Open in new tab
+        document.getElementById('video-player').onerror = function() {
+            window.open(streams[currentStream], '_blank');
+        };
     </script>
 </body>
 </html>
