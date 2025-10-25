@@ -108,12 +108,13 @@
             width: 100%;
             height: 500px;
             background: #111;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            font-size: 18px;
             position: relative;
+        }
+        
+        #video-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
         
         .player-overlay {
@@ -372,7 +373,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.9);
-            display: flex;
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -407,6 +408,28 @@
         
         .close-overlay:hover {
             background: var(--primary-dark);
+        }
+        
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
         
         @media (max-width: 768px) {
@@ -456,11 +479,10 @@
     <div class="container">
         <div class="player-container">
             <div id="video-player">
-                <div id="player-placeholder">
-                    <i class="fas fa-play-circle" style="font-size: 48px; margin-bottom: 15px;"></i>
-                    <p>Select a source to start playing</p>
+                <div class="loading-spinner" id="loading-spinner">
+                    <div class="spinner"></div>
                 </div>
-                <iframe id="video-frame" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+                <iframe id="video-frame" src="about:blank" allowfullscreen></iframe>
                 <div class="player-overlay">
                     <h3>Ad-Free Movie Experience</h3>
                     <p>All ads and pop-ups have been blocked</p>
@@ -469,11 +491,11 @@
             
             <div class="player-controls">
                 <div class="control-group">
-                    <button class="control-btn" id="play-pause">
-                        <i class="fas fa-play"></i>
+                    <button class="control-btn" id="refresh">
+                        <i class="fas fa-sync-alt"></i>
                     </button>
-                    <button class="control-btn" id="stop">
-                        <i class="fas fa-stop"></i>
+                    <button class="control-btn" id="pip-mode">
+                        <i class="fas fa-compress"></i>
                     </button>
                 </div>
                 
@@ -482,7 +504,7 @@
                 </div>
                 
                 <div class="time-display">
-                    <span id="current-time">00:00</span> / <span id="duration">00:00</span>
+                    <span id="current-time">00:00</span> / <span id="duration">02:15:00</span>
                 </div>
                 
                 <div class="control-group">
@@ -590,9 +612,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Elements
             const videoFrame = document.getElementById('video-frame');
-            const playerPlaceholder = document.getElementById('player-placeholder');
             const playPauseBtn = document.getElementById('play-pause');
-            const stopBtn = document.getElementById('stop');
+            const refreshBtn = document.getElementById('refresh');
+            const pipBtn = document.getElementById('pip-mode');
             const muteBtn = document.getElementById('mute');
             const volumeSlider = document.getElementById('volume');
             const fullscreenBtn = document.getElementById('fullscreen');
@@ -604,14 +626,16 @@
             const qualitySelect = document.getElementById('quality');
             const adBlockOverlay = document.getElementById('ad-block-overlay');
             const closeOverlayBtn = document.getElementById('close-overlay');
+            const loadingSpinner = document.getElementById('loading-spinner');
             
             // State variables
             let isPlaying = false;
             let currentSource = '';
             let currentTime = 0;
-            let duration = 0;
+            let duration = 8100; // 2:15:00 in seconds
             let isMuted = false;
             let volume = 80;
+            let adBlockEnabled = true;
             
             // Advanced Ad Blocking System
             function initializeAdBlocking() {
@@ -620,6 +644,7 @@
                 // Block all pop-up windows
                 window.open = function() {
                     console.log("Blocked pop-up window attempt");
+                    showAdBlockMessage("Pop-up blocked");
                     return null;
                 };
                 
@@ -627,6 +652,7 @@
                 const originalWindowOpen = window.open;
                 window.open = function(url, name, features) {
                     console.log("Blocked new window/tab: " + url);
+                    showAdBlockMessage("New tab/window blocked");
                     return null;
                 };
                 
@@ -637,6 +663,7 @@
                         e.preventDefault();
                         e.returnValue = '';
                         console.log("Blocked redirect attempt");
+                        showAdBlockMessage("Page redirect blocked");
                         return "Are you sure you want to leave? All ads are blocked on this site.";
                     }
                 };
@@ -646,6 +673,7 @@
                     if (e.target.closest('#video-player')) {
                         e.preventDefault();
                         console.log("Blocked right-click on video player");
+                        showAdBlockMessage("Right-click context menu blocked");
                         return false;
                     }
                 });
@@ -655,6 +683,7 @@
                     if (e.button === 1 && e.target.closest('#video-player')) {
                         e.preventDefault();
                         console.log("Blocked middle-click on video player");
+                        showAdBlockMessage("Middle-click action blocked");
                         return false;
                     }
                 });
@@ -673,35 +702,48 @@
                         if (!target.href.includes('danka1567.github.io')) {
                             e.preventDefault();
                             console.log("Blocked external link: " + target.href);
-                            showAdBlockMessage();
+                            showAdBlockMessage("External link blocked");
                             return false;
                         }
                     }
                 });
                 
-                // Block iframe navigation
-                const originalContentWindow = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow').get;
-                Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
-                    get: function() {
-                        const contentWindow = originalContentWindow.apply(this);
-                        if (this.id === 'video-frame') {
-                            // Block certain actions in the iframe
-                            const originalPostMessage = contentWindow.postMessage;
-                            contentWindow.postMessage = function() {
-                                console.log("Blocked postMessage from iframe");
-                                return null;
-                            };
-                        }
-                        return contentWindow;
+                // Block iframe navigation attempts
+                window.addEventListener('message', function(e) {
+                    // Block any messages that try to redirect or open new windows
+                    if (e.data && (e.data.type === 'redirect' || e.data.type === 'openWindow')) {
+                        console.log("Blocked iframe message attempt: " + e.data.type);
+                        e.source.postMessage({type: 'blocked', reason: 'ad protection'}, '*');
+                        return false;
                     }
                 });
+                
+                // Override alert to prevent spammy popups
+                const originalAlert = window.alert;
+                window.alert = function(message) {
+                    console.log("Blocked alert: " + message);
+                    return;
+                };
+                
+                // Override confirm to prevent spammy popups
+                const originalConfirm = window.confirm;
+                window.confirm = function(message) {
+                    console.log("Blocked confirm: " + message);
+                    return false;
+                };
                 
                 console.log("Advanced ad blocking system activated");
             }
             
             // Show ad block message
-            function showAdBlockMessage() {
+            function showAdBlockMessage(message) {
+                adBlockOverlay.querySelector('p').textContent = message || "Ad blocking protection active";
                 adBlockOverlay.style.display = 'flex';
+                
+                // Auto hide after 3 seconds
+                setTimeout(() => {
+                    adBlockOverlay.style.display = 'none';
+                }, 3000);
             }
             
             // Hide ad block message
@@ -709,11 +751,17 @@
                 adBlockOverlay.style.display = 'none';
             }
             
-            // Format time as MM:SS
+            // Format time as HH:MM:SS
             function formatTime(seconds) {
-                const mins = Math.floor(seconds / 60);
+                const hrs = Math.floor(seconds / 3600);
+                const mins = Math.floor((seconds % 3600) / 60);
                 const secs = Math.floor(seconds % 60);
-                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                
+                if (hrs > 0) {
+                    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                } else {
+                    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                }
             }
             
             // Update progress bar and time display
@@ -727,7 +775,6 @@
                     if (currentTime >= duration) {
                         // Video ended
                         isPlaying = false;
-                        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
                         currentTime = 0;
                         progressBar.style.width = '0%';
                         currentTimeEl.textContent = formatTime(0);
@@ -738,29 +785,15 @@
             // Set up interval to update progress
             setInterval(updateProgress, 1000);
             
-            // Play/Pause functionality
-            playPauseBtn.addEventListener('click', function() {
+            // Refresh iframe
+            refreshBtn.addEventListener('click', function() {
                 if (currentSource) {
-                    isPlaying = !isPlaying;
-                    playPauseBtn.innerHTML = isPlaying ? 
-                        '<i class="fas fa-pause"></i>' : 
-                        '<i class="fas fa-play"></i>';
-                    
-                    // For demo purposes, set a random duration between 5 and 10 minutes
-                    if (isPlaying && duration === 0) {
-                        duration = Math.floor(Math.random() * 300) + 300; // 5-10 minutes in seconds
-                        durationEl.textContent = formatTime(duration);
-                    }
+                    loadingSpinner.style.display = 'block';
+                    videoFrame.src = currentSource;
+                    setTimeout(() => {
+                        loadingSpinner.style.display = 'none';
+                    }, 2000);
                 }
-            });
-            
-            // Stop functionality
-            stopBtn.addEventListener('click', function() {
-                isPlaying = false;
-                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-                currentTime = 0;
-                progressBar.style.width = '0%';
-                currentTimeEl.textContent = formatTime(0);
             });
             
             // Mute functionality
@@ -827,69 +860,27 @@
                     // Get source URL
                     currentSource = this.getAttribute('data-source');
                     
-                    // Show video frame and hide placeholder
-                    playerPlaceholder.style.display = 'none';
-                    videoFrame.style.display = 'block';
+                    // Show loading spinner
+                    loadingSpinner.style.display = 'block';
                     
-                    // For demo purposes, we'll just show a message since we can't embed these sites
-                    videoFrame.srcdoc = `
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <style>
-                                body {
-                                    margin: 0;
-                                    padding: 0;
-                                    background: #111;
-                                    color: white;
-                                    display: flex;
-                                    justify-content: center;
-                                    align-items: center;
-                                    height: 100vh;
-                                    font-family: Arial, sans-serif;
-                                }
-                                .demo-message {
-                                    text-align: center;
-                                    padding: 20px;
-                                }
-                                .demo-message h2 {
-                                    color: #e50914;
-                                    margin-bottom: 15px;
-                                }
-                                .security-badge {
-                                    background: #2d2d2d;
-                                    padding: 10px 15px;
-                                    border-radius: 4px;
-                                    margin-top: 20px;
-                                    display: inline-block;
-                                }
-                            </style>
-                        </head>
-                        <body>
-                            <div class="demo-message">
-                                <h2>Secure Movie Player</h2>
-                                <p>In a real implementation, this would embed:</p>
-                                <p><strong>${currentSource}</strong></p>
-                                <p>All ads, pop-ups, and redirects have been blocked.</p>
-                                <div class="security-badge">
-                                    <i class="fas fa-shield-alt"></i> Protected by Advanced Ad Blocking
-                                </div>
-                            </div>
-                        </body>
-                        </html>
-                    `;
+                    // Load the iframe with the selected source
+                    videoFrame.src = currentSource;
+                    
+                    // Hide spinner after a delay (simulating load time)
+                    setTimeout(() => {
+                        loadingSpinner.style.display = 'none';
+                    }, 2000);
                     
                     // Reset player state
-                    isPlaying = false;
-                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    isPlaying = true;
                     currentTime = 0;
                     progressBar.style.width = '0%';
                     currentTimeEl.textContent = formatTime(0);
-                    duration = 0;
-                    durationEl.textContent = formatTime(0);
                     
                     // Show ad block message for demonstration
-                    setTimeout(showAdBlockMessage, 1000);
+                    setTimeout(() => {
+                        showAdBlockMessage("Stream loaded with ad blocking protection");
+                    }, 1000);
                 });
             });
             
@@ -897,6 +888,7 @@
             qualitySelect.addEventListener('change', function() {
                 // In a real implementation, this would change the video quality
                 console.log(`Quality changed to: ${this.value}`);
+                showAdBlockMessage(`Quality set to ${this.value}`);
             });
             
             // Close overlay
@@ -907,6 +899,9 @@
             
             // Initialize ad blocking system
             initializeAdBlocking();
+            
+            // Set initial duration display
+            durationEl.textContent = formatTime(duration);
         });
     </script>
 </body>
