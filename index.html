@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Video Player</title>
+    <!-- Video.js CDN (CSS and JS) -->
+    <link href="https://vjs.zencdn.net/8.6.1/video-js.min.css" rel="stylesheet">
+    <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .video-container {
+            width: 80%;
+            max-width: 1200px;
+            position: relative;
+        }
+        video {
+            width: 100%;
+            height: auto;
+        }
+        /* Custom controls styling (optional enhancement) */
+        .vjs-control-bar {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        .vjs-big-play-button {
+            background-color: rgba(255, 0, 0, 0.7);
+            border-radius: 50%;
+        }
+        /* Fullscreen toggle */
+        .vjs-fullscreen-control:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container">
+        <video id="my-video" class="video-js vjs-default-skin" controls preload="auto" poster="https://via.placeholder.com/1200x675?text=Video+Poster">
+            <!-- Replace these with your extracted direct sources -->
+            <source src="https://example.com/direct-video.mp4" type="video/mp4"> <!-- Direct MP4 example -->
+            <source src="https://example.com/stream.m3u8" type="application/x-mpegURL"> <!-- HLS example -->
+            <!-- Add more sources as fallbacks -->
+            <p class="vjs-no-js">To view this video, please enable JavaScript and consider upgrading to a web browser that supports HTML5 video.</p>
+        </video>
+    </div>
+
+    <script>
+        // Initialize Video.js
+        var player = videojs('my-video', {
+            fluid: true, // Responsive sizing
+            playbackRates: [0.5, 1, 1.5, 2], // Speed controls
+            plugins: {
+                // Optional: Add if you need advanced features like thumbnails or chapters
+            }
+        });
+
+        // Example: Auto-play on load (uncomment if desired)
+        // player.play();
+
+        // Error handling (e.g., if source fails)
+        player.on('error', function() {
+            console.log('Playback error:', player.error());
+        });
+    </script>
+</body>
+</html>
