@@ -3,179 +3,496 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Ad-Free Video Player</title>
+    <title>Professional Movie Player</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
-            background-color: #000;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #0f0f0f;
             color: #fff;
-            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            min-height: 100vh;
         }
-        #playlist {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            background: rgba(0,0,0,0.8);
-            padding: 10px;
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+        
+        header {
+            background: linear-gradient(to right, #1a1a1a, #2d2d2d);
+            padding: 15px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e50914;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo i {
+            margin-right: 10px;
+        }
+        
+        .player-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            margin: 20px 0;
+        }
+        
+        #video-player {
+            width: 100%;
+            height: 500px;
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+            font-size: 18px;
+        }
+        
+        .player-controls {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .control-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .control-btn:hover {
+            color: #e50914;
+        }
+        
+        .progress-container {
+            flex-grow: 1;
+            margin: 0 20px;
+            position: relative;
+            height: 5px;
+            background: #333;
             border-radius: 5px;
+            cursor: pointer;
         }
-        #playlist button {
-            display: block;
-            margin: 5px 0;
-            padding: 8px 12px;
+        
+        .progress-bar {
+            height: 100%;
+            background: #e50914;
+            border-radius: 5px;
+            width: 0%;
+        }
+        
+        .time-display {
+            font-size: 14px;
+            color: #ccc;
+            white-space: nowrap;
+        }
+        
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .volume-slider {
+            width: 80px;
+        }
+        
+        .sources-panel {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .sources-panel h3 {
+            margin-bottom: 15px;
+            color: #e50914;
+            font-size: 18px;
+        }
+        
+        .source-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .source-btn {
+            background: #333;
+            border: none;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .source-btn:hover {
+            background: #444;
+        }
+        
+        .source-btn.active {
+            background: #e50914;
+        }
+        
+        .quality-selector {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .quality-selector select {
             background: #333;
             color: #fff;
             border: none;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-        #playlist button:hover {
-            background: #555;
-        }
-        #player-container {
-            position: relative;
-            width: 100%;
-            height: calc(100vh - 60px);
-            background: #000;
-        }
-        #video-player {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: #000;
-        }
-        /* Ad Blocker CSS: Hide common ad elements without sandbox */
-        iframe {
-            /* Ensure iframe fills container */
-        }
-        /* Dynamic ad hiding - targets common classes/ids */
-        .ad, .ads, #ad, #ads, .popup, #popup, .banner, .overlay, 
-        [class*="ad-"], [id*="ad-"], .advertisement, iframe[src*="ads"], 
-        div[style*="position: fixed"], div[style*="z-index: 9999"] {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            height: 0 !important;
-            width: 0 !important;
-        }
-        /* Hide script-loaded ads */
-        script[src*="ads"], script[src*="doubleclick"], script[src*="googlead"] {
-            display: none !important;
-        }
-        /* Controls overlay */
-        .controls {
-            position: fixed;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1001;
-            background: rgba(0,0,0,0.7);
-            padding: 10px;
-            border-radius: 5px;
-            display: flex;
-            gap: 10px;
-        }
-        .controls button {
             padding: 8px 12px;
-            background: #ff0000;
-            color: #fff;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
+            border-radius: 4px;
         }
-        .controls button:hover {
-            background: #cc0000;
+        
+        footer {
+            margin-top: auto;
+            background: #1a1a1a;
+            padding: 20px 0;
+            text-align: center;
+            color: #777;
+            font-size: 14px;
         }
-        /* Fullscreen support */
-        #player-container:-webkit-full-screen #video-player,
-        #player-container:-moz-full-screen #video-player,
-        #player-container:fullscreen #video-player {
-            width: 100vw;
-            height: 100vh;
+        
+        @media (max-width: 768px) {
+            #video-player {
+                height: 300px;
+            }
+            
+            .control-group {
+                gap: 10px;
+            }
+            
+            .progress-container {
+                margin: 0 10px;
+            }
+            
+            .volume-slider {
+                width: 60px;
+            }
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div id="playlist">
-        <h4>Select Stream:</h4>
-        <button onclick="loadStream(0)">111Movies (Deadpool & Wolverine)</button>
-        <button onclick="loadStream(1)">VidRock (Terminator)</button>
-        <button onclick="loadStream(2)">VidFast (Terminator)</button>
-        <button onclick="loadStream(3)">DSVPlay</button>
-        <button onclick="loadStream(4)">LukeSitTurn</button>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-film"></i>
+                <span>PRO MOVIE PLAYER</span>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="player-container">
+            <div id="video-player">
+                <div id="player-placeholder">
+                    <i class="fas fa-play-circle" style="font-size: 48px; margin-bottom: 15px;"></i>
+                    <p>Select a source to start playing</p>
+                </div>
+                <iframe id="video-frame" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+            </div>
+            
+            <div class="player-controls">
+                <div class="control-group">
+                    <button class="control-btn" id="play-pause">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="control-btn" id="stop">
+                        <i class="fas fa-stop"></i>
+                    </button>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                
+                <div class="time-display">
+                    <span id="current-time">00:00</span> / <span id="duration">00:00</span>
+                </div>
+                
+                <div class="control-group">
+                    <div class="volume-container">
+                        <button class="control-btn" id="mute">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                        <input type="range" class="volume-slider" id="volume" min="0" max="100" value="80">
+                    </div>
+                    <button class="control-btn" id="fullscreen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sources-panel">
+            <h3>Available Sources</h3>
+            <div class="source-list">
+                <button class="source-btn active" data-source="https://111movies.com/movie/533535">111Movies</button>
+                <button class="source-btn" data-source="https://vidrock.net/embed/movie/290859">VidRock</button>
+                <button class="source-btn" data-source="https://vidfast.pro/movie/290859">VidFast</button>
+                <button class="source-btn" data-source="https://dsvplay.com/e/dzqgcpjjesxn?dd38">DSVPlay</button>
+                <button class="source-btn" data-source="https://lukesitturn.com/e/9sq5jnuem4zd">LukeSitturn</button>
+            </div>
+            
+            <div class="quality-selector">
+                <label for="quality">Quality:</label>
+                <select id="quality">
+                    <option value="auto">Auto</option>
+                    <option value="1080">1080p</option>
+                    <option value="720">720p</option>
+                    <option value="480">480p</option>
+                    <option value="360">360p</option>
+                </select>
+            </div>
+        </div>
     </div>
-
-    <div id="player-container">
-        <iframe id="video-player" src="about:blank" allowfullscreen></iframe>
-    </div>
-
-    <div class="controls">
-        <button onclick="togglePlay()">Play/Pause</button>
-        <button onclick="toggleFullscreen()">Fullscreen</button>
-    </div>
+    
+    <footer>
+        <div class="container">
+            <p>Professional Movie Player &copy; 2023 | For demonstration purposes only</p>
+        </div>
+    </footer>
 
     <script>
-        const streams = [
-            'https://111movies.com/movie/533535',
-            'https://vidrock.net/embed/movie/290859',
-            'https://vidfast.pro/movie/290859',
-            'https://dsvplay.com/e/dzqgcpjjesxn?dd38',
-            'https://lukesitturn.com/e/9sq5jnuem4zd'
-        ];
-
-        let currentStream = 0;
-
-        function loadStream(index) {
-            currentStream = index;
-            const player = document.getElementById('video-player');
-            player.src = streams[index];
-            // Auto-play if possible (sites handle their own players)
-            player.onload = () => {
-                // Inject ad-blocker script into iframe (cross-origin workaround via postMessage if needed, but CSS handles most)
-                console.log('Loaded:', streams[index]);
-            };
-        }
-
-        // Load first stream by default
-        loadStream(0);
-
-        function togglePlay() {
-            const iframe = document.getElementById('video-player');
-            // Send postMessage to control play/pause (if site supports; fallback to reload)
-            iframe.contentWindow.postMessage({action: 'playPause'}, '*');
-        }
-
-        function toggleFullscreen() {
-            const container = document.getElementById('player-container');
-            if (container.requestFullscreen) {
-                container.requestFullscreen();
-            } else if (container.webkitRequestFullscreen) {
-                container.webkitRequestFullscreen();
-            } else if (container.mozRequestFullScreen) {
-                container.mozRequestFullScreen();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const videoFrame = document.getElementById('video-frame');
+            const playerPlaceholder = document.getElementById('player-placeholder');
+            const playPauseBtn = document.getElementById('play-pause');
+            const stopBtn = document.getElementById('stop');
+            const muteBtn = document.getElementById('mute');
+            const volumeSlider = document.getElementById('volume');
+            const fullscreenBtn = document.getElementById('fullscreen');
+            const progressBar = document.getElementById('progress-bar');
+            const progressContainer = document.querySelector('.progress-container');
+            const currentTimeEl = document.getElementById('current-time');
+            const durationEl = document.getElementById('duration');
+            const sourceBtns = document.querySelectorAll('.source-btn');
+            const qualitySelect = document.getElementById('quality');
+            
+            // State variables
+            let isPlaying = false;
+            let currentSource = '';
+            let currentTime = 0;
+            let duration = 0;
+            let isMuted = false;
+            let volume = 80;
+            
+            // Format time as MM:SS
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
             }
-        }
-
-        // Enhanced ad blocker: Periodically scan and hide new ads
-        setInterval(() => {
-            const iframeDoc = document.getElementById('video-player').contentDocument || document.getElementById('video-player').contentWindow.document;
-            if (iframeDoc) {
-                const ads = iframeDoc.querySelectorAll('.ad, .popup, [class*="ad"]');
-                ads.forEach(ad => {
-                    ad.style.display = 'none';
+            
+            // Update progress bar and time display
+            function updateProgress() {
+                if (isPlaying) {
+                    currentTime += 1;
+                    const progressPercent = (currentTime / duration) * 100;
+                    progressBar.style.width = `${progressPercent}%`;
+                    currentTimeEl.textContent = formatTime(currentTime);
+                    
+                    if (currentTime >= duration) {
+                        // Video ended
+                        isPlaying = false;
+                        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        currentTime = 0;
+                        progressBar.style.width = '0%';
+                        currentTimeEl.textContent = formatTime(0);
+                    }
+                }
+            }
+            
+            // Set up interval to update progress
+            setInterval(updateProgress, 1000);
+            
+            // Play/Pause functionality
+            playPauseBtn.addEventListener('click', function() {
+                if (currentSource) {
+                    isPlaying = !isPlaying;
+                    playPauseBtn.innerHTML = isPlaying ? 
+                        '<i class="fas fa-pause"></i>' : 
+                        '<i class="fas fa-play"></i>';
+                    
+                    // For demo purposes, set a random duration between 5 and 10 minutes
+                    if (isPlaying && duration === 0) {
+                        duration = Math.floor(Math.random() * 300) + 300; // 5-10 minutes in seconds
+                        durationEl.textContent = formatTime(duration);
+                    }
+                }
+            });
+            
+            // Stop functionality
+            stopBtn.addEventListener('click', function() {
+                isPlaying = false;
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                currentTime = 0;
+                progressBar.style.width = '0%';
+                currentTimeEl.textContent = formatTime(0);
+            });
+            
+            // Mute functionality
+            muteBtn.addEventListener('click', function() {
+                isMuted = !isMuted;
+                muteBtn.innerHTML = isMuted ? 
+                    '<i class="fas fa-volume-mute"></i>' : 
+                    '<i class="fas fa-volume-up"></i>';
+                volumeSlider.value = isMuted ? 0 : volume;
+            });
+            
+            // Volume control
+            volumeSlider.addEventListener('input', function() {
+                volume = volumeSlider.value;
+                if (volume > 0 && isMuted) {
+                    isMuted = false;
+                    muteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                } else if (volume == 0 && !isMuted) {
+                    isMuted = true;
+                    muteBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                }
+            });
+            
+            // Fullscreen functionality
+            fullscreenBtn.addEventListener('click', function() {
+                const playerContainer = document.querySelector('.player-container');
+                if (!document.fullscreenElement) {
+                    if (playerContainer.requestFullscreen) {
+                        playerContainer.requestFullscreen();
+                    } else if (playerContainer.webkitRequestFullscreen) {
+                        playerContainer.webkitRequestFullscreen();
+                    } else if (playerContainer.msRequestFullscreen) {
+                        playerContainer.msRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+            });
+            
+            // Progress bar click to seek
+            progressContainer.addEventListener('click', function(e) {
+                if (duration > 0) {
+                    const rect = progressContainer.getBoundingClientRect();
+                    const percent = (e.clientX - rect.left) / rect.width;
+                    currentTime = Math.floor(percent * duration);
+                    progressBar.style.width = `${percent * 100}%`;
+                    currentTimeEl.textContent = formatTime(currentTime);
+                }
+            });
+            
+            // Source selection
+            sourceBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active button
+                    sourceBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Get source URL
+                    currentSource = this.getAttribute('data-source');
+                    
+                    // Show video frame and hide placeholder
+                    playerPlaceholder.style.display = 'none';
+                    videoFrame.style.display = 'block';
+                    
+                    // For demo purposes, we'll just show a message since we can't embed these sites
+                    videoFrame.srcdoc = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <style>
+                                body {
+                                    margin: 0;
+                                    padding: 0;
+                                    background: #111;
+                                    color: white;
+                                    display: flex;
+                                    justify-content: center;
+                                    align-items: center;
+                                    height: 100vh;
+                                    font-family: Arial, sans-serif;
+                                }
+                                .demo-message {
+                                    text-align: center;
+                                    padding: 20px;
+                                }
+                                .demo-message h2 {
+                                    color: #e50914;
+                                    margin-bottom: 15px;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="demo-message">
+                                <h2>Demo Player</h2>
+                                <p>In a real implementation, this would embed:</p>
+                                <p><strong>${currentSource}</strong></p>
+                                <p>Due to security restrictions, we cannot embed external sites in this demo.</p>
+                            </div>
+                        </body>
+                        </html>
+                    `;
+                    
+                    // Reset player state
+                    isPlaying = false;
+                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    currentTime = 0;
+                    progressBar.style.width = '0%';
+                    currentTimeEl.textContent = formatTime(0);
+                    duration = 0;
+                    durationEl.textContent = formatTime(0);
                 });
-            }
-        }, 2000);
-
-        // Fallback if iframe blocked: Open in new tab
-        document.getElementById('video-player').onerror = function() {
-            window.open(streams[currentStream], '_blank');
-        };
+            });
+            
+            // Quality selection
+            qualitySelect.addEventListener('change', function() {
+                // In a real implementation, this would change the video quality
+                console.log(`Quality changed to: ${this.value}`);
+            });
+            
+            // Initialize with first source
+            document.querySelector('.source-btn.active').click();
+        });
     </script>
 </body>
 </html>
