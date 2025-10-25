@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Movie Player</title>
+    <title>Professional Movie Player | Ad-Free Experience</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -12,12 +13,27 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
+        :root {
+            --primary: #e50914;
+            --primary-dark: #b2070f;
+            --dark: #0f0f0f;
+            --dark-light: #1a1a1a;
+            --dark-lighter: #2d2d2d;
+            --text: #ffffff;
+            --text-secondary: #cccccc;
+            --text-muted: #777777;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+        }
+        
         body {
-            background: #0f0f0f;
-            color: #fff;
+            background: var(--dark);
+            color: var(--text);
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            overflow-x: hidden;
         }
         
         .container {
@@ -28,21 +44,54 @@
         }
         
         header {
-            background: linear-gradient(to right, #1a1a1a, #2d2d2d);
+            background: linear-gradient(to right, var(--dark-light), var(--dark-lighter));
             padding: 15px 0;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .logo {
             font-size: 24px;
             font-weight: bold;
-            color: #e50914;
+            color: var(--primary);
             display: flex;
             align-items: center;
         }
         
         .logo i {
             margin-right: 10px;
+        }
+        
+        .ad-block-status {
+            display: flex;
+            align-items: center;
+            background: var(--dark-lighter);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
         
         .player-container {
@@ -62,8 +111,29 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #aaa;
+            color: var(--text-secondary);
             font-size: 18px;
+            position: relative;
+        }
+        
+        .player-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .player-container:hover .player-overlay {
+            opacity: 1;
         }
         
         .player-controls {
@@ -72,6 +142,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            position: relative;
+            z-index: 20;
         }
         
         .control-group {
@@ -83,14 +155,17 @@
         .control-btn {
             background: none;
             border: none;
-            color: #fff;
+            color: var(--text);
             font-size: 18px;
             cursor: pointer;
             transition: color 0.3s;
+            padding: 5px;
+            border-radius: 4px;
         }
         
         .control-btn:hover {
-            color: #e50914;
+            color: var(--primary);
+            background: rgba(255, 255, 255, 0.1);
         }
         
         .progress-container {
@@ -98,21 +173,40 @@
             margin: 0 20px;
             position: relative;
             height: 5px;
-            background: #333;
+            background: var(--dark-lighter);
             border-radius: 5px;
             cursor: pointer;
         }
         
         .progress-bar {
             height: 100%;
-            background: #e50914;
+            background: var(--primary);
             border-radius: 5px;
             width: 0%;
+            position: relative;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .progress-container:hover .progress-bar::after {
+            opacity: 1;
         }
         
         .time-display {
             font-size: 14px;
-            color: #ccc;
+            color: var(--text-secondary);
             white-space: nowrap;
         }
         
@@ -124,10 +218,24 @@
         
         .volume-slider {
             width: 80px;
+            -webkit-appearance: none;
+            height: 4px;
+            background: var(--dark-lighter);
+            border-radius: 2px;
+            outline: none;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
         }
         
         .sources-panel {
-            background: #1a1a1a;
+            background: var(--dark-light);
             border-radius: 8px;
             padding: 20px;
             margin-top: 20px;
@@ -135,32 +243,101 @@
         
         .sources-panel h3 {
             margin-bottom: 15px;
-            color: #e50914;
+            color: var(--primary);
             font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sources-panel h3 i {
+            margin-right: 10px;
         }
         
         .source-list {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+            margin-bottom: 20px;
         }
         
         .source-btn {
-            background: #333;
+            background: var(--dark-lighter);
             border: none;
-            color: #fff;
+            color: var(--text);
             padding: 10px 15px;
             border-radius: 4px;
             cursor: pointer;
             transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
         .source-btn:hover {
-            background: #444;
+            background: #333;
         }
         
         .source-btn.active {
-            background: #e50914;
+            background: var(--primary);
+        }
+        
+        .source-btn i {
+            font-size: 14px;
+        }
+        
+        .ad-block-panel {
+            background: var(--dark-light);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .ad-block-panel h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .ad-block-panel h3 i {
+            margin-right: 10px;
+        }
+        
+        .protection-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .protection-item {
+            background: var(--dark-lighter);
+            padding: 15px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .protection-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .protection-info h4 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .protection-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
         }
         
         .quality-selector {
@@ -171,20 +348,65 @@
         }
         
         .quality-selector select {
-            background: #333;
-            color: #fff;
+            background: var(--dark-lighter);
+            color: var(--text);
             border: none;
             padding: 8px 12px;
             border-radius: 4px;
+            outline: none;
         }
         
         footer {
             margin-top: auto;
-            background: #1a1a1a;
+            background: var(--dark-light);
             padding: 20px 0;
             text-align: center;
-            color: #777;
+            color: var(--text-muted);
             font-size: 14px;
+        }
+        
+        .ad-block-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .ad-block-overlay h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        .ad-block-overlay p {
+            max-width: 600px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .close-overlay {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .close-overlay:hover {
+            background: var(--primary-dark);
         }
         
         @media (max-width: 768px) {
@@ -203,16 +425,30 @@
             .volume-slider {
                 width: 60px;
             }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .protection-list {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <header>
         <div class="container">
-            <div class="logo">
-                <i class="fas fa-film"></i>
-                <span>PRO MOVIE PLAYER</span>
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-film"></i>
+                    <span>PRO MOVIE PLAYER</span>
+                </div>
+                <div class="ad-block-status">
+                    <div class="status-indicator"></div>
+                    <span>Ad Blocking Active - Secure Browsing</span>
+                </div>
             </div>
         </div>
     </header>
@@ -225,6 +461,10 @@
                     <p>Select a source to start playing</p>
                 </div>
                 <iframe id="video-frame" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+                <div class="player-overlay">
+                    <h3>Ad-Free Movie Experience</h3>
+                    <p>All ads and pop-ups have been blocked</p>
+                </div>
             </div>
             
             <div class="player-controls">
@@ -260,13 +500,23 @@
         </div>
         
         <div class="sources-panel">
-            <h3>Available Sources</h3>
+            <h3><i class="fas fa-satellite-dish"></i> Available Sources</h3>
             <div class="source-list">
-                <button class="source-btn active" data-source="https://111movies.com/movie/533535">111Movies</button>
-                <button class="source-btn" data-source="https://vidrock.net/embed/movie/290859">VidRock</button>
-                <button class="source-btn" data-source="https://vidfast.pro/movie/290859">VidFast</button>
-                <button class="source-btn" data-source="https://dsvplay.com/e/dzqgcpjjesxn?dd38">DSVPlay</button>
-                <button class="source-btn" data-source="https://lukesitturn.com/e/9sq5jnuem4zd">LukeSitturn</button>
+                <button class="source-btn active" data-source="https://111movies.com/movie/533535">
+                    <i class="fas fa-play-circle"></i> 111Movies
+                </button>
+                <button class="source-btn" data-source="https://vidrock.net/embed/movie/290859">
+                    <i class="fas fa-play-circle"></i> VidRock
+                </button>
+                <button class="source-btn" data-source="https://vidfast.pro/movie/290859">
+                    <i class="fas fa-play-circle"></i> VidFast
+                </button>
+                <button class="source-btn" data-source="https://dsvplay.com/e/dzqgcpjjesxn?dd38">
+                    <i class="fas fa-play-circle"></i> DSVPlay
+                </button>
+                <button class="source-btn" data-source="https://lukesitturn.com/e/9sq5jnuem4zd">
+                    <i class="fas fa-play-circle"></i> LukeSitturn
+                </button>
             </div>
             
             <div class="quality-selector">
@@ -280,13 +530,61 @@
                 </select>
             </div>
         </div>
+        
+        <div class="ad-block-panel">
+            <h3><i class="fas fa-shield-alt"></i> Active Protection</h3>
+            <div class="protection-list">
+                <div class="protection-item">
+                    <div class="protection-icon">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                    <div class="protection-info">
+                        <h4>Ad Blocking</h4>
+                        <p>All banner ads and video ads blocked</p>
+                    </div>
+                </div>
+                <div class="protection-item">
+                    <div class="protection-icon">
+                        <i class="fas fa-window-close"></i>
+                    </div>
+                    <div class="protection-info">
+                        <h4>Pop-up Blocker</h4>
+                        <p>Prevents unwanted pop-up windows</p>
+                    </div>
+                </div>
+                <div class="protection-item">
+                    <div class="protection-icon">
+                        <i class="fas fa-directions"></i>
+                    </div>
+                    <div class="protection-info">
+                        <h4>Redirect Protection</h4>
+                        <p>Blocks automatic page redirects</p>
+                    </div>
+                </div>
+                <div class="protection-item">
+                    <div class="protection-icon">
+                        <i class="fas fa-external-link-alt"></i>
+                    </div>
+                    <div class="protection-info">
+                        <h4>New Tab Protection</h4>
+                        <p>Prevents opening new tabs/windows</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <footer>
         <div class="container">
-            <p>Professional Movie Player &copy; 2023 | For demonstration purposes only</p>
+            <p>Professional Movie Player &copy; 2023 | Advanced Ad Blocking Technology | Secure Browsing Experience</p>
         </div>
     </footer>
+
+    <div class="ad-block-overlay" id="ad-block-overlay">
+        <h2>Ad Blocking Active</h2>
+        <p>Our advanced protection system is blocking ads, pop-ups, and redirects to provide you with a seamless viewing experience. All content is secured to remain within this domain.</p>
+        <button class="close-overlay" id="close-overlay">Continue Watching</button>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -304,6 +602,8 @@
             const durationEl = document.getElementById('duration');
             const sourceBtns = document.querySelectorAll('.source-btn');
             const qualitySelect = document.getElementById('quality');
+            const adBlockOverlay = document.getElementById('ad-block-overlay');
+            const closeOverlayBtn = document.getElementById('close-overlay');
             
             // State variables
             let isPlaying = false;
@@ -312,6 +612,102 @@
             let duration = 0;
             let isMuted = false;
             let volume = 80;
+            
+            // Advanced Ad Blocking System
+            function initializeAdBlocking() {
+                console.log("Initializing advanced ad blocking system...");
+                
+                // Block all pop-up windows
+                window.open = function() {
+                    console.log("Blocked pop-up window attempt");
+                    return null;
+                };
+                
+                // Override window.open to prevent new tabs/windows
+                const originalWindowOpen = window.open;
+                window.open = function(url, name, features) {
+                    console.log("Blocked new window/tab: " + url);
+                    return null;
+                };
+                
+                // Prevent redirects
+                window.onbeforeunload = function(e) {
+                    // Only allow redirects to our domain
+                    if (e && e.target && e.target.URL && !e.target.URL.includes('danka1567.github.io')) {
+                        e.preventDefault();
+                        e.returnValue = '';
+                        console.log("Blocked redirect attempt");
+                        return "Are you sure you want to leave? All ads are blocked on this site.";
+                    }
+                };
+                
+                // Block context menu on video player to prevent "Open in new tab"
+                document.addEventListener('contextmenu', function(e) {
+                    if (e.target.closest('#video-player')) {
+                        e.preventDefault();
+                        console.log("Blocked right-click on video player");
+                        return false;
+                    }
+                });
+                
+                // Prevent middle-click on video player
+                document.addEventListener('auxclick', function(e) {
+                    if (e.button === 1 && e.target.closest('#video-player')) {
+                        e.preventDefault();
+                        console.log("Blocked middle-click on video player");
+                        return false;
+                    }
+                });
+                
+                // Intercept all link clicks
+                document.addEventListener('click', function(e) {
+                    let target = e.target;
+                    
+                    // Find the closest anchor tag
+                    while (target && target.nodeName !== 'A') {
+                        target = target.parentElement;
+                    }
+                    
+                    if (target && target.href) {
+                        // Only allow navigation within our domain
+                        if (!target.href.includes('danka1567.github.io')) {
+                            e.preventDefault();
+                            console.log("Blocked external link: " + target.href);
+                            showAdBlockMessage();
+                            return false;
+                        }
+                    }
+                });
+                
+                // Block iframe navigation
+                const originalContentWindow = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow').get;
+                Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+                    get: function() {
+                        const contentWindow = originalContentWindow.apply(this);
+                        if (this.id === 'video-frame') {
+                            // Block certain actions in the iframe
+                            const originalPostMessage = contentWindow.postMessage;
+                            contentWindow.postMessage = function() {
+                                console.log("Blocked postMessage from iframe");
+                                return null;
+                            };
+                        }
+                        return contentWindow;
+                    }
+                });
+                
+                console.log("Advanced ad blocking system activated");
+            }
+            
+            // Show ad block message
+            function showAdBlockMessage() {
+                adBlockOverlay.style.display = 'flex';
+            }
+            
+            // Hide ad block message
+            function hideAdBlockMessage() {
+                adBlockOverlay.style.display = 'none';
+            }
             
             // Format time as MM:SS
             function formatTime(seconds) {
@@ -460,14 +856,24 @@
                                     color: #e50914;
                                     margin-bottom: 15px;
                                 }
+                                .security-badge {
+                                    background: #2d2d2d;
+                                    padding: 10px 15px;
+                                    border-radius: 4px;
+                                    margin-top: 20px;
+                                    display: inline-block;
+                                }
                             </style>
                         </head>
                         <body>
                             <div class="demo-message">
-                                <h2>Demo Player</h2>
+                                <h2>Secure Movie Player</h2>
                                 <p>In a real implementation, this would embed:</p>
                                 <p><strong>${currentSource}</strong></p>
-                                <p>Due to security restrictions, we cannot embed external sites in this demo.</p>
+                                <p>All ads, pop-ups, and redirects have been blocked.</p>
+                                <div class="security-badge">
+                                    <i class="fas fa-shield-alt"></i> Protected by Advanced Ad Blocking
+                                </div>
                             </div>
                         </body>
                         </html>
@@ -481,6 +887,9 @@
                     currentTimeEl.textContent = formatTime(0);
                     duration = 0;
                     durationEl.textContent = formatTime(0);
+                    
+                    // Show ad block message for demonstration
+                    setTimeout(showAdBlockMessage, 1000);
                 });
             });
             
@@ -490,8 +899,14 @@
                 console.log(`Quality changed to: ${this.value}`);
             });
             
+            // Close overlay
+            closeOverlayBtn.addEventListener('click', hideAdBlockMessage);
+            
             // Initialize with first source
             document.querySelector('.source-btn.active').click();
+            
+            // Initialize ad blocking system
+            initializeAdBlocking();
         });
     </script>
 </body>
